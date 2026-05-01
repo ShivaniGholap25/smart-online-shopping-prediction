@@ -1,14 +1,6 @@
 ﻿# Purpose: Load the online shoppers dataset, run EDA, and save key plots.
 
-# Import required libraries for data handling and visualization.
 import os
-import sys
-
-# Resolve the project root as the directory containing this script.
-# This ensures all relative paths work correctly regardless of where
-# Python is invoked from (e.g. parent folder, IDE, or command line).
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-os.chdir(PROJECT_ROOT)
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -16,11 +8,38 @@ import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
+# ---------------------------------------------------------------------------
+# Absolute project root — anchored to this file's location.
+# All paths below are built with os.path.join(PROJECT_ROOT, ...) so the
+# script works correctly regardless of the current working directory.
+# ---------------------------------------------------------------------------
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Canonical directory paths
+_DATA_DIR   = os.path.join(PROJECT_ROOT, "data")
+_STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
+_MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
+
 
 def load_and_explore(
-    dataset_path: str = "data/online_shoppers_intention.csv",
-    output_dir: str = "static",
+    dataset_path: str = None,
+    output_dir:   str = None,
 ):
+    """Load the dataset, print EDA summary, and save visualisation plots.
+
+    Parameters
+    ----------
+    dataset_path : str, optional
+        Path to the CSV file.  Defaults to <project_root>/data/online_shoppers_intention.csv.
+    output_dir : str, optional
+        Directory where plots are saved.  Defaults to <project_root>/static/.
+    """
+    # Apply defaults anchored to the project root.
+    if dataset_path is None:
+        dataset_path = os.path.join(_DATA_DIR, "online_shoppers_intention.csv")
+    if output_dir is None:
+        output_dir = _STATIC_DIR
+
     # Set seaborn style for consistent plot formatting.
     sns.set_style("whitegrid")
 
@@ -34,7 +53,6 @@ def load_and_explore(
     if df["Revenue"].dtype == bool:
         df["Revenue"] = df["Revenue"].astype(int)
     elif df["Revenue"].dtype == object:
-        # Map string labels to numeric 1/0 when Revenue is text.
         df["Revenue"] = df["Revenue"].map(
             {"TRUE": 1, "FALSE": 0, "True": 1, "False": 0}
         )
@@ -117,21 +135,18 @@ def load_and_explore(
 
 
 def preprocess_data(df):
-    # Wrap preprocessing in try/except to provide clear error handling.
+    """Clean, encode, scale, and split the dataset.
+
+    Saves models/scaler.pkl using an absolute path anchored to PROJECT_ROOT.
+    Returns X_train, X_test, y_train, y_test as float64 DataFrames/Series.
+    """
     try:
         # Create a working copy so the original input DataFrame is not modified in place.
         data = df.copy()
 
         # Convert Revenue values from True/False (or string variants) to 1/0.
         data["Revenue"] = data["Revenue"].replace(
-            {
-                True: 1,
-                False: 0,
-                "TRUE": 1,
-                "FALSE": 0,
-                "True": 1,
-                "False": 0,
-            }
+            {True: 1, False: 0, "TRUE": 1, "FALSE": 0, "True": 1, "False": 0}
         )
 
         # Fill missing values in numeric columns with the median of each column.
@@ -164,13 +179,8 @@ def preprocess_data(df):
 
         # Define numeric columns to scale as requested.
         scale_cols = [
-            "Administrative",
-            "Informational",
-            "ProductRelated",
-            "BounceRates",
-            "ExitRates",
-            "PageValues",
-            "SpecialDay",
+            "Administrative", "Informational", "ProductRelated",
+            "BounceRates", "ExitRates", "PageValues", "SpecialDay",
         ]
 
         # Keep only columns that exist in X to avoid key errors.
@@ -179,44 +189,37 @@ def preprocess_data(df):
         # Fit StandardScaler on selected numeric columns and transform them.
         scaler = StandardScaler()
         if existing_scale_cols:
-            # Convert selected columns to float64 before scaling to avoid dtype assignment issues.
             X.loc[:, existing_scale_cols] = X[existing_scale_cols].astype("float64")
             X.loc[:, existing_scale_cols] = scaler.fit_transform(X[existing_scale_cols])
 
         # Ensure the models directory exists before saving the scaler artifact.
-        os.makedirs("models", exist_ok=True)
+        os.makedirs(_MODELS_DIR, exist_ok=True)
 
-        # Save the fitted scaler to models/scaler.pkl using joblib.
-        joblib.dump(scaler, "models/scaler.pkl")
+        # Save the fitted scaler using an absolute path.
+        scaler_path = os.path.join(_MODELS_DIR, "scaler.pkl")
+        joblib.dump(scaler, scaler_path)
 
         # Split into train/test sets with 80/20 ratio and stratified target split.
         X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=0.2,
-            random_state=42,
-            stratify=y,
+            X, y, test_size=0.2, random_state=42, stratify=y,
         )
 
         # Ensure train/test feature matrices are float64 after splitting.
         X_train = X_train.astype(float)
-        X_test = X_test.astype(float)
+        X_test  = X_test.astype(float)
 
         # Print resulting split shapes for quick verification.
         print("X_train shape:", X_train.shape)
-        print("X_test shape:", X_test.shape)
+        print("X_test shape:",  X_test.shape)
         print("y_train shape:", y_train.shape)
-        print("y_test shape:", y_test.shape)
+        print("y_test shape:",  y_test.shape)
 
-        # Return the split datasets for downstream model training and evaluation.
         return X_train, X_test, y_train, y_test
 
     except Exception as error:
-        # Print and re-raise the exception so calling code can handle it as needed.
         print(f"Error in preprocess_data: {error}")
         raise
 
 
 if __name__ == "__main__":
-    # Run the data loading and EDA workflow when executing this file directly.
     load_and_explore()
