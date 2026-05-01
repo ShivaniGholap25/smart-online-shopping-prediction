@@ -16,24 +16,17 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay,
 )
 
-from preprocess import preprocess_data, load_and_explore
+from .utils.paths import get_path
+from .preprocess import preprocess_data, load_and_explore
 
-# ---------------------------------------------------------------------------
-# Absolute project root — anchored to this file's location.
-# All paths below are built with os.path.join(PROJECT_ROOT, ...) so the
-# script works correctly regardless of the current working directory.
-# ---------------------------------------------------------------------------
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-# Canonical directory paths
-_MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
-_STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
+# Canonical directory paths — derived from the single source of truth.
+_MODELS_DIR = get_path("models")
+_STATIC_DIR = get_path("static")
 
 
 def train_all_models(X_train, X_test, y_train, y_test):
     """Train, evaluate, plot, and persist 4 models, then return results and models."""
     try:
-        # Ensure output directories exist before saving artifacts.
         os.makedirs(_MODELS_DIR, exist_ok=True)
         os.makedirs(_STATIC_DIR, exist_ok=True)
 
@@ -63,15 +56,14 @@ def train_all_models(X_train, X_test, y_train, y_test):
             random_state=42,
         )
 
-        # Fit the three base models.
         logistic_model.fit(X_train, y_train)
         rf_model.fit(X_train, y_train)
         ann_model.fit(X_train, y_train)
 
-        # Save base models using absolute paths.
-        joblib.dump(logistic_model, os.path.join(_MODELS_DIR, "logistic_model.pkl"))
-        joblib.dump(rf_model,       os.path.join(_MODELS_DIR, "rf_model.pkl"))
-        joblib.dump(ann_model,      os.path.join(_MODELS_DIR, "ann_model.pkl"))
+        # Save base models via get_path().
+        joblib.dump(logistic_model, get_path("models", "logistic_model.pkl"))
+        joblib.dump(rf_model,       get_path("models", "rf_model.pkl"))
+        joblib.dump(ann_model,      get_path("models", "ann_model.pkl"))
 
         # ── MODEL 4: Soft-voting Ensemble ─────────────────────────────────
         ensemble_model = VotingClassifier(
@@ -99,7 +91,7 @@ def train_all_models(X_train, X_test, y_train, y_test):
         )
 
         ensemble_model.fit(X_train, y_train)
-        joblib.dump(ensemble_model, os.path.join(_MODELS_DIR, "ensemble_model.pkl"))
+        joblib.dump(ensemble_model, get_path("models", "ensemble_model.pkl"))
 
         # ── Evaluate all models ───────────────────────────────────────────
         trained_models = {
@@ -110,8 +102,7 @@ def train_all_models(X_train, X_test, y_train, y_test):
         }
 
         for model_name, model in trained_models.items():
-            y_pred = model.predict(X_test)
-
+            y_pred      = model.predict(X_test)
             accuracy    = accuracy_score(y_test, y_pred)
             report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
             report_text = classification_report(y_test, y_pred, zero_division=0)
@@ -121,14 +112,14 @@ def train_all_models(X_train, X_test, y_train, y_test):
             print("Classification Report:")
             print(report_text)
 
-            # Confusion matrix — saved to absolute path.
+            # Confusion matrix saved via get_path().
             cm   = confusion_matrix(y_test, y_pred)
             disp = ConfusionMatrixDisplay(confusion_matrix=cm)
             disp.plot(cmap="Blues", values_format="d")
             plt.title(f"{model_name} Confusion Matrix")
             plt.tight_layout()
             plt.savefig(
-                os.path.join(_STATIC_DIR, f"{model_name.lower()}_confusion_matrix.png"),
+                get_path("static", f"{model_name.lower()}_confusion_matrix.png"),
                 dpi=300,
             )
             plt.close()
@@ -140,8 +131,8 @@ def train_all_models(X_train, X_test, y_train, y_test):
                 "f1":        report_dict["weighted avg"]["f1-score"],
             }
 
-        # Save results dict using absolute path.
-        joblib.dump(results, os.path.join(_MODELS_DIR, "results.pkl"))
+        # Save results dict via get_path().
+        joblib.dump(results, get_path("models", "results.pkl"))
 
         return results, logistic_model, rf_model, ann_model, ensemble_model
 

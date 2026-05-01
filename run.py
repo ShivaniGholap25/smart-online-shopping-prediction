@@ -1,22 +1,10 @@
 ﻿# Purpose: Run the full purchase intent pipeline from data loading to business insights.
 
-import os
 import time
 
-# ---------------------------------------------------------------------------
-# Absolute project root — anchored to this file's location.
-# Importing preprocess/train/evaluate works from any working directory
-# because we add PROJECT_ROOT to sys.path before the imports.
-# ---------------------------------------------------------------------------
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-import sys
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-from preprocess import load_and_explore, preprocess_data
-from train      import train_all_models
-from evaluate   import evaluate_models, business_insights
+from .preprocess import load_and_explore, preprocess_data
+from .train      import train_all_models
+from .evaluate   import evaluate_models, business_insights
 
 
 def run_step(step_name, step_function, *args, **kwargs):

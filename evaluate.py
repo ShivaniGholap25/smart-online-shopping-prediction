@@ -9,16 +9,11 @@ import seaborn as sns
 from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-# ---------------------------------------------------------------------------
-# Absolute project root — anchored to this file's location.
-# All paths below are built with os.path.join(PROJECT_ROOT, ...) so the
-# script works correctly regardless of the current working directory.
-# ---------------------------------------------------------------------------
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+from .utils.paths import get_path
 
-# Canonical directory paths
-_MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
-_STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
+# Canonical directory paths — derived from the single source of truth.
+_MODELS_DIR = get_path("models")
+_STATIC_DIR = get_path("static")
 
 
 def evaluate_models(results, rf_model, all_models, X_test, y_test):
@@ -27,7 +22,7 @@ def evaluate_models(results, rf_model, all_models, X_test, y_test):
         sns.set_style("whitegrid")
         os.makedirs(_STATIC_DIR, exist_ok=True)
 
-        # Build comparison table from results dict.
+        # Build comparison table.
         comparison_rows = []
         for model_name, metric_values in results.items():
             comparison_rows.append({
@@ -74,7 +69,7 @@ def evaluate_models(results, rf_model, all_models, X_test, y_test):
                 )
 
         plt.tight_layout()
-        plt.savefig(os.path.join(_STATIC_DIR, "comparison_chart.png"), dpi=300)
+        plt.savefig(get_path("static", "comparison_chart.png"), dpi=300)
         plt.close()
 
         # Feature importance chart.
@@ -84,13 +79,13 @@ def evaluate_models(results, rf_model, all_models, X_test, y_test):
         top_10 = feature_importances.sort_values(ascending=False).head(10)
 
         plt.figure(figsize=(10, 6))
-        ax = sns.barplot(x=top_10.values, y=top_10.index, color="steelblue", label="Importance")
+        sns.barplot(x=top_10.values, y=top_10.index, color="steelblue", label="Importance")
         plt.title("Top 10 Feature Importances")
         plt.xlabel("Importance Score")
         plt.ylabel("Feature")
         plt.legend(title="Legend")
         plt.tight_layout()
-        plt.savefig(os.path.join(_STATIC_DIR, "feature_importance.png"), dpi=300)
+        plt.savefig(get_path("static", "feature_importance.png"), dpi=300)
         plt.close()
 
         # ROC curves.
@@ -113,19 +108,19 @@ def evaluate_models(results, rf_model, all_models, X_test, y_test):
         plt.ylabel("True Positive Rate")
         plt.legend(loc="lower right", title="Models")
         plt.tight_layout()
-        plt.savefig(os.path.join(_STATIC_DIR, "roc_curve.png"), dpi=300)
+        plt.savefig(get_path("static", "roc_curve.png"), dpi=300)
         plt.close()
 
         # Best model summary.
-        ranked_df = comparison_df.sort_values(by=["F1-Score", "Accuracy"], ascending=False)
+        ranked_df       = comparison_df.sort_values(by=["F1-Score", "Accuracy"], ascending=False)
         best_model_name = ranked_df.iloc[0]["Model"] if not ranked_df.empty else "N/A"
 
         print("\nFinal Summary:")
         print(f"Best performing model (by F1-Score): {best_model_name}")
 
         if "Ensemble" in comparison_df["Model"].values:
-            ensemble_f1      = comparison_df.loc[comparison_df["Model"] == "Ensemble", "F1-Score"].iloc[0]
-            best_individual  = comparison_df.loc[comparison_df["Model"] != "Ensemble", "F1-Score"].max()
+            ensemble_f1     = comparison_df.loc[comparison_df["Model"] == "Ensemble", "F1-Score"].iloc[0]
+            best_individual = comparison_df.loc[comparison_df["Model"] != "Ensemble", "F1-Score"].max()
             if ensemble_f1 >= best_individual:
                 print("Ensemble advantage: combines diverse model decisions, reducing variance.")
             else:
@@ -139,15 +134,9 @@ def evaluate_models(results, rf_model, all_models, X_test, y_test):
 
 
 def rebuild_and_save_results(all_models, X_test, y_test, output_path=None):
-    """Recompute and save evaluation metrics for all models.
-
-    Parameters
-    ----------
-    output_path : str, optional
-        Absolute path for results.pkl.  Defaults to <project_root>/models/results.pkl.
-    """
+    """Recompute and save evaluation metrics for all models."""
     if output_path is None:
-        output_path = os.path.join(_MODELS_DIR, "results.pkl")
+        output_path = get_path("models", "results.pkl")
 
     try:
         import joblib
@@ -207,7 +196,7 @@ def business_insights(ensemble_model, X_test, y_test):
         print("\nUser Count by Segment:")
         print(segment_counts.to_string())
 
-        # Pie chart — saved to absolute path.
+        # Pie chart saved via get_path().
         plt.figure(figsize=(7, 7))
         pie_counts = result_df["Segment"].value_counts()
         plt.pie(
@@ -221,7 +210,7 @@ def business_insights(ensemble_model, X_test, y_test):
         plt.ylabel("Proportion")
         plt.legend(title="Segments", loc="best")
         plt.tight_layout()
-        plt.savefig(os.path.join(_STATIC_DIR, "segment_distribution.png"), dpi=300)
+        plt.savefig(get_path("static", "segment_distribution.png"), dpi=300)
         plt.close()
 
         print("\nBusiness Interpretation:")
@@ -238,30 +227,27 @@ def business_insights(ensemble_model, X_test, y_test):
 
 if __name__ == "__main__":
     import joblib
-    from preprocess import load_and_explore, preprocess_data
+    from .preprocess import load_and_explore, preprocess_data
 
     # Guard: models must exist before evaluation can run.
-    required = [
-        os.path.join(_MODELS_DIR, f)
-        for f in ("logistic_model.pkl", "rf_model.pkl", "ann_model.pkl", "ensemble_model.pkl")
-    ]
+    required = [get_path("models", f)
+                for f in ("logistic_model.pkl", "rf_model.pkl",
+                          "ann_model.pkl", "ensemble_model.pkl")]
     missing = [f for f in required if not os.path.exists(f)]
     if missing:
         print("ERROR: The following model files are missing:")
         for f in missing:
             print(f"  {f}")
-        print("Run 'python train.py' first to generate them.")
+        print("Run 'python -m project.run' first to generate them.")
         raise SystemExit(1)
 
-    # Load data and preprocess.
     df = load_and_explore()
     X_train, X_test, y_train, y_test = preprocess_data(df)
 
-    # Load all saved models using absolute paths.
-    logistic_model = joblib.load(os.path.join(_MODELS_DIR, "logistic_model.pkl"))
-    rf_model       = joblib.load(os.path.join(_MODELS_DIR, "rf_model.pkl"))
-    ann_model      = joblib.load(os.path.join(_MODELS_DIR, "ann_model.pkl"))
-    ensemble_model = joblib.load(os.path.join(_MODELS_DIR, "ensemble_model.pkl"))
+    logistic_model = joblib.load(get_path("models", "logistic_model.pkl"))
+    rf_model       = joblib.load(get_path("models", "rf_model.pkl"))
+    ann_model      = joblib.load(get_path("models", "ann_model.pkl"))
+    ensemble_model = joblib.load(get_path("models", "ensemble_model.pkl"))
 
     all_models = {
         "Logistic":     logistic_model,
