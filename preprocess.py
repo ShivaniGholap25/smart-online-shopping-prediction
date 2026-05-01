@@ -2,6 +2,13 @@
 
 # Import required libraries for data handling and visualization.
 import os
+import sys
+
+# Resolve the project root as the directory containing this script.
+# This ensures all relative paths work correctly regardless of where
+# Python is invoked from (e.g. parent folder, IDE, or command line).
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+os.chdir(PROJECT_ROOT)
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns

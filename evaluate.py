@@ -2,6 +2,13 @@
 
 # Import built-in module for creating required output directories.
 import os
+import sys
+
+# Resolve the project root as the directory containing this script.
+# This ensures all relative paths work correctly regardless of where
+# Python is invoked from (e.g. parent folder, IDE, or command line).
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+os.chdir(PROJECT_ROOT)
 
 # Import pandas for tabular comparison output.
 import pandas as pd
@@ -324,6 +331,26 @@ def business_insights(ensemble_model, X_test, y_test):
 if __name__ == "__main__":
     import joblib
     from preprocess import load_and_explore, preprocess_data
+
+    # Ensure models directory exists before attempting to load artifacts.
+    if not os.path.isdir("models"):
+        print("ERROR: 'models/' directory not found.")
+        print("Run 'python train.py' first to generate all model files.")
+        raise SystemExit(1)
+
+    required_models = [
+        "models/logistic_model.pkl",
+        "models/rf_model.pkl",
+        "models/ann_model.pkl",
+        "models/ensemble_model.pkl",
+    ]
+    missing = [f for f in required_models if not os.path.exists(f)]
+    if missing:
+        print("ERROR: The following model files are missing:")
+        for f in missing:
+            print(f"  {f}")
+        print("Run 'python train.py' first to generate them.")
+        raise SystemExit(1)
 
     # Load data and preprocess
     df = load_and_explore()

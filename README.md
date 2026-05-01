@@ -141,7 +141,73 @@ smart-online-shopping-prediction/
 
 ---
 
-## How to Run
+## Reproducibility — Generate Models from Scratch
+
+> ⚠️ **`.pkl` model files are NOT included in this repository.**  
+> They are excluded via `.gitignore` because they are large binary files that can be fully regenerated from the source code and dataset in under 2 minutes.
+
+### Step-by-step to reproduce everything
+
+**1. Clone the repository**
+```bash
+git clone https://github.com/your-username/smart-online-shopping-prediction.git
+cd smart-online-shopping-prediction
+```
+
+**2. Install dependencies**
+```bash
+pip install -r requirements.txt
+pip install shap
+```
+
+**3. Run preprocessing** *(EDA plots + scaler)*
+```bash
+python preprocess.py
+```
+Generates: `models/scaler.pkl`, `static/*.png` (EDA charts)
+
+**4. Train all models**
+```bash
+python train.py
+```
+Generates:
+```
+models/
+├── logistic_model.pkl
+├── rf_model.pkl
+├── ann_model.pkl
+├── ensemble_model.pkl
+├── scaler.pkl
+└── results.pkl
+```
+
+**5. Evaluate models** *(metrics + charts)*
+```bash
+python evaluate.py
+```
+Generates: `static/comparison_chart.png`, `static/roc_curve.png`, `static/feature_importance.png`
+
+**6. (Optional) Hyperparameter tuning**
+```bash
+python notebooks/07_hyperparameter_tuning.py
+```
+Generates: `models/rf_tuned.pkl`, `models/ann_tuned.pkl`
+
+**7. (Optional) SHAP explainability plots**
+```bash
+python notebooks/08_shap_explainability.py
+```
+Generates: `static/shap_summary_bar.png`, `static/shap_summary_dot.png`
+
+**8. Launch the web app**
+```bash
+streamlit run app.py
+```
+
+> **Note:** All scripts use `os.chdir()` to resolve paths relative to the script location,  
+> so they work correctly whether run from the project folder or its parent directory.
+
+---
 
 ### 1. Clone the repository
 ```bash

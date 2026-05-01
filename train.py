@@ -2,7 +2,16 @@
 
 # Import standard library modules for filesystem handling and traceback output.
 import os
+import sys
 import traceback
+
+# Resolve the project root as the directory containing this script.
+# This ensures all relative paths work correctly regardless of where
+# Python is invoked from (e.g. parent folder, IDE, or command line).
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Change working directory to project root so all relative paths resolve correctly.
+os.chdir(PROJECT_ROOT)
 
 # Import plotting library for confusion matrix visualizations.
 import matplotlib.pyplot as plt

@@ -1,7 +1,14 @@
 ﻿# Purpose: Run the full purchase intent pipeline from data loading to business insights.
 
-# Import timing utility to measure step-level execution duration.
+# Import standard library modules.
+import os
 import time
+
+# Resolve the project root as the directory containing this script.
+# This ensures all relative paths work correctly regardless of where
+# Python is invoked from (e.g. parent folder, IDE, or command line).
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+os.chdir(PROJECT_ROOT)
 
 # Import data loading and preprocessing functions.
 from preprocess import load_and_explore, preprocess_data
