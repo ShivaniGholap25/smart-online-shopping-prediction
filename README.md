@@ -1,89 +1,226 @@
-﻿# Purchase Intent Predictor
+﻿# Smart Online Shopping Purchase Intent Prediction
 
-## Problem Statement
-Build an end-to-end machine learning system to predict whether an online shopper will generate revenue (`Revenue = 1`) based on session behavior and engagement patterns.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.8.0-orange)
+![Streamlit](https://img.shields.io/badge/Streamlit-app-red)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Dataset Info
-- Dataset: Online Shoppers Purchasing Intention Dataset
-- File: `data/online_shoppers_intention.csv`
-- Target Column: `Revenue` (converted from True/False to 1/0)
-- Type: Binary classification
+---
 
-## Folder Structure (tree)
-```text
-project/
-├── app.py
-├── evaluate.py
-├── preprocess.py
-├── run.py
-├── train.py
-├── requirements.txt
-├── README.md
-├── data/
-│   └── online_shoppers_intention.csv
-├── models/
-│   ├── ann_model.pkl
-│   ├── ensemble_model.pkl
-│   ├── logistic_model.pkl
-│   ├── rf_model.pkl
-│   ├── results.pkl
-│   └── scaler.pkl
-├── notebooks/
-│   └── analysis.ipynb
-└── static/
-    ├── bouncerates_distribution.png
-    ├── comparison_chart.png
-    ├── correlation_heatmap.png
-    ├── feature_importance.png
-    ├── logistic_confusion_matrix.png
-    ├── ann_confusion_matrix.png
-    ├── randomforest_confusion_matrix.png
-    ├── ensemble_confusion_matrix.png
-    ├── pagevalues_distribution.png
-    ├── revenue_countplot.png
-    ├── roc_curve.png
-    ├── segment_distribution.png
-    └── visitortype_vs_revenue.png
-```
+## Overview
+
+### The Problem
+E-commerce platforms face a critical challenge: the majority of visitors browse without purchasing.
+- **~85% of sessions** end without a transaction
+- Cart abandonment rates exceed 70% globally
+- Businesses lose revenue without knowing *which* users are close to buying
+
+### The Solution
+This project builds an end-to-end **machine learning classification system** that predicts whether an online shopper will complete a purchase based on their real-time session behaviour.
+
+The system segments users into three actionable groups:
+| Segment | Purchase Probability | Recommended Action |
+|---|---|---|
+| 🔴 Just Browsing | 0% – 30% | Show discount popup |
+| 🟡 Interested | 30% – 70% | Show product recommendations |
+| 🟢 Ready to Buy | 70% – 100% | Show urgency / limited-time offer |
+
+---
+
+## Features
+
+- **User behaviour analysis** — page visits, bounce rates, exit rates, session duration
+- **Binary classification** — predicts Buyer (1) vs Non-Buyer (0)
+- **Ensemble learning** — combines Logistic Regression, Random Forest, and ANN
+- **Model evaluation** — accuracy, precision, recall, F1-score, ROC-AUC
+- **SHAP explainability** — shows which features drove each prediction
+- **Hyperparameter tuning** — RandomizedSearchCV for RF and ANN
+- **Interactive web app** — Streamlit UI with real-time prediction and SHAP force plots
+
+---
+
+## Tech Stack
+
+| Category | Tools |
+|---|---|
+| Language | Python 3.9+ |
+| ML Framework | Scikit-learn 1.8.0 |
+| Neural Network | MLPClassifier (scikit-learn) |
+| Data Processing | Pandas, NumPy |
+| Visualisation | Matplotlib, Seaborn |
+| Explainability | SHAP |
+| Web App | Streamlit |
+| Model Persistence | Joblib |
+
+---
 
 ## Models Used
-- Logistic Regression: Linear baseline model with balanced class weights for binary prediction.
-- Random Forest Classifier: Tree ensemble model for non-linear feature interactions and robust performance.
-- ANN (MLPClassifier): Neural network model to learn complex behavior patterns in user sessions.
-- Voting Classifier (Soft Ensemble): Combines probability outputs of all base models to improve stability and accuracy.
 
-## How To Run
-```bash
-pip install -r requirements.txt
-python run.py
-streamlit run app.py
+| Model | Description |
+|---|---|
+| **Logistic Regression** | Linear baseline with balanced class weights and SAGA solver |
+| **Random Forest** | 100-tree ensemble; captures non-linear feature interactions |
+| **ANN (MLPClassifier)** | 2-layer neural network (64→32 neurons), ReLU, Adam optimiser |
+| **Soft Voting Ensemble** | Averages probability outputs of all three base models |
+
+---
+
+## Results
+
+Evaluated on a held-out 20% test set (stratified split, `random_state=42`):
+
+| Model | Accuracy | Precision | Recall | F1-Score |
+|---|---|---|---|---|
+| Logistic Regression | 25.22% | 85.79% | 25.22% | 22.19% |
+| **Random Forest** | **89.46%** | **88.57%** | **89.46%** | **88.39%** |
+| ANN | 88.32% | 87.70% | 88.32% | 86.02% |
+| Ensemble | 88.93% | 88.25% | 88.93% | 87.11% |
+
+**Best performing model: Random Forest** (F1-Score: 88.39%)
+
+> Note: Logistic Regression underperforms due to convergence issues on this dataset.
+> The Ensemble improves stability over individual models by blending complementary predictions.
+
+---
+
+## Dataset
+
+| Property | Value |
+|---|---|
+| Name | Online Shoppers Purchasing Intention Dataset |
+| Source | UCI Machine Learning Repository |
+| File | `data/online_shoppers_intention.csv` |
+| Rows | 12,330 sessions |
+| Features | 17 input features + 1 target |
+| Target | `Revenue` — True (purchased) / False (did not purchase) |
+| Class balance | 84.5% Non-Buyer / 15.5% Buyer |
+
+---
+
+## Project Structure
+
+```
+smart-online-shopping-prediction/
+│
+├── app.py                  # Streamlit web application (4 tabs)
+├── preprocess.py           # Data loading, EDA, encoding, scaling, train/test split
+├── train.py                # Model training and saving all 4 models
+├── evaluate.py             # Evaluation metrics, charts, business insights
+├── run.py                  # Full pipeline orchestrator (runs all steps)
+├── requirements.txt        # Python dependencies
+├── README.md               # Project documentation
+│
+├── data/
+│   └── online_shoppers_intention.csv   # Raw dataset
+│
+├── models/                 # Saved model artifacts (generated by run.py)
+│   ├── logistic_model.pkl
+│   ├── rf_model.pkl
+│   ├── ann_model.pkl
+│   ├── ensemble_model.pkl
+│   ├── rf_tuned.pkl        # Hyperparameter-tuned RF
+│   ├── ann_tuned.pkl       # Hyperparameter-tuned ANN
+│   ├── scaler.pkl          # Fitted StandardScaler
+│   └── results.pkl         # Evaluation metrics dict
+│
+├── notebooks/
+│   ├── analysis.ipynb                  # Exploratory data analysis
+│   ├── 07_hyperparameter_tuning.py     # RandomizedSearchCV for RF and ANN
+│   └── 08_shap_explainability.py       # SHAP summary and force plots
+│
+└── static/                 # Generated visualisation images
+    ├── comparison_chart.png
+    ├── roc_curve.png
+    ├── feature_importance.png
+    ├── segment_distribution.png
+    ├── correlation_heatmap.png
+    ├── shap_summary_bar.png
+    ├── shap_summary_dot.png
+    └── ...
 ```
 
-## Model Comparison Table (placeholder)
-| Model | Accuracy | Precision | Recall | F1-Score |
-|------|----------|-----------|--------|----------|
-| Logistic | TBD | TBD | TBD | TBD |
-| RandomForest | TBD | TBD | TBD | TBD |
-| ANN | TBD | TBD | TBD | TBD |
-| Ensemble | TBD | TBD | TBD | TBD |
+---
 
-## Business Insights Summary
-- Browsing users (low probability): prioritize discount nudges to increase engagement.
-- Interested users (mid probability): show personalized recommendations to push toward conversion.
-- Ready-to-Buy users (high probability): apply urgency-based offers to maximize immediate purchase completion.
+## How to Run
 
-## Future Scope
-- Add hyperparameter tuning (GridSearchCV/RandomizedSearchCV) for each model.
-- Add model explainability with SHAP for decision transparency.
-- Add real-time monitoring and drift detection for production behavior changes.
-- Add A/B testing hooks for segment-specific campaign effectiveness.
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/smart-online-shopping-prediction.git
+cd smart-online-shopping-prediction
+```
 
-## Technologies Used
-- Python
-- pandas
-- numpy
-- scikit-learn
-- matplotlib
-- seaborn
-- streamlit
-- joblib
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+pip install shap
+```
+
+### 3. Train all models
+Runs the full pipeline: preprocessing → training → evaluation → business insights.
+All `.pkl` files and `static/` charts are generated automatically.
+```bash
+python run.py
+```
+
+### 4. (Optional) Hyperparameter tuning
+```bash
+python notebooks/07_hyperparameter_tuning.py
+```
+
+### 5. (Optional) Generate SHAP plots
+```bash
+python notebooks/08_shap_explainability.py
+```
+
+### 6. Launch the web app
+```bash
+streamlit run app.py
+```
+Open your browser at `http://localhost:8501`
+
+---
+
+## Web App — Tabs
+
+| Tab | Description |
+|---|---|
+| **Predict** | Adjust sidebar inputs → click Predict → see probability, segment badge, recommended action, and final verdict |
+| **Model Comparison** | Performance charts, ROC curves, and metrics table for all 4 models |
+| **Feature Importance** | Top 10 features by Random Forest importance + customer segment distribution |
+| **Explainability (SHAP)** | Global SHAP summary plots + real-time force plot for the current input |
+
+---
+
+## Screenshots
+
+> Add screenshots of the running app here.
+
+| Predict Tab | SHAP Explainability |
+|---|---|
+| *(screenshot)* | *(screenshot)* |
+
+---
+
+## Future Improvements
+
+- [ ] Deploy to Streamlit Cloud or Hugging Face Spaces for public access
+- [ ] Add real-time data ingestion via API
+- [ ] Improve Logistic Regression with better feature selection / regularisation
+- [ ] Add XGBoost and LightGBM models for comparison
+- [ ] Implement drift detection for production monitoring
+- [ ] Add A/B testing hooks for segment-specific campaign effectiveness
+- [ ] Replace MLPClassifier with a TensorFlow/Keras deep learning model
+- [ ] Add user authentication to the Streamlit app
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+---
+
+## Author
+
+Built as part of an end-to-end machine learning portfolio project.  
+Feel free to fork, star ⭐, and contribute.
